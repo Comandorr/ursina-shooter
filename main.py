@@ -81,9 +81,9 @@ def update():
                     bullets.remove(b)
                     w.disable()
                     b.disable()
-    if distance(player, gun) <= 1.1 and player.gun != gun:
+    if distance(player, gun) <= 1.2 and player.gun != gun:
         player.grab(gun)
-    if distance(player, gun2) <= 1.1 and player.gun != gun2:
+    if distance(player, gun2) <= 1.2 and player.gun != gun2:
         player.grab(gun2)
 
 
