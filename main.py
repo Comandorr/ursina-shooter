@@ -4,7 +4,7 @@ from ursina.shaders import lit_with_shadows_shader
 from ursina.prefabs.first_person_controller import FirstPersonController
 from random import*
 
-app = Ursina()
+app = Ursina(vsync=1)
 guns = list()
 bullets = list()
 
@@ -17,13 +17,15 @@ class Gun(Entity):
 
     def shoot(self):
         shot.play()
-        self.animate('rotation_x', randint(-10, -3))
+        self.animate('rotation_x', randint(-7, -3))
         invoke(self.animate, 'rotation_x', 0, delay=.1)
         self.blink(color.orange)
-        bullet = Entity(parent=self, model='cube', collider='box', scale=.5, color=color.red,
-                        position=self.position + (-0.2, 2.5, 0) + self.forward * 10)
-        bullets.append(bullet)
+        bullet = Entity(parent=self, model='cube', collider='box', scale=.5, color=color.red)
+        bullet.position += player.gun.forward
+        bullet.rotation = player.gun.rotation
         bullet.world_parent = scene
+        bullet.animate_position(bullet.position+(bullet.forward*1000), curve=curve.linear, duration=1)
+        bullets.append(bullet)
 
 
 class Player(FirstPersonController):
@@ -36,7 +38,7 @@ class Player(FirstPersonController):
         if self.gun:
             self.gun.shooting.pause()
             self.gun.parent = scene
-            self.gun.position = self.position + self.forward * 2
+            self.gun.position = self.position + self.forward * 2.5
             self.gun.y = 1
             self.gun.rotation = (0, 0, 0)
             self.gun.collider = 'mesh'
@@ -50,6 +52,7 @@ class Player(FirstPersonController):
         g.collider = None
         self.gun = g
         self.gun.collider = None
+        print(player.gun.bounds)
 
 
 ground = Entity(model='plane', scale=(100, 1, 100), texture='grass', texture_scale=(10, 10), collider='box')
@@ -61,12 +64,14 @@ box1 = Entity(model='cube', collider='box', position=(0, 0, 8), scale=6, rotatio
               texture_scale=(8, 8), shader=lit_with_shadows_shader)
 box2 = Entity(model='cube', collider='box', position=(5, 10, 10), scale=6, rotation=(45, 0, 0), texture='brick',
               texture_scale=(8, 8), shader=lit_with_shadows_shader)
-hookshot_target = Button(parent=scene, model='cube', color=color.brown, position=(4, 5, 5),
-                         shader=lit_with_shadows_shader, collider='box')
-hookshot_target.on_click = Func(player.animate_position, hookshot_target.position + (0, 1, 0), duration=.5,
-                                curve=curve.linear)
+
+enemy1 = Entity(model='models/tank.obj', texture='textures/tank.png', collider='mesh', position=(5, 0, 5))
+enemy2 = Entity(model='models/tank.obj', texture='textures/tank.png', collider='mesh', position=(-5, 0, -5))
+enemy3 = Entity(model='models/tank.obj', texture='textures/tank.png', collider='mesh', position=(-5, 0, 5))
+
+
 shot = Audio('shot', autoplay=False)
-world = [box1, box2, hookshot_target]
+enemies = [enemy1, enemy2, enemy3]
 
 
 def update():
@@ -75,15 +80,17 @@ def update():
             g.rotation_y += 1
     if len(bullets) > 0:
         for b in bullets:
-            b.position += b.forward * 50
-            for w in world:
-                if b.intersects(w):
+            for e in enemies:
+                if b.intersects(e):
                     bullets.remove(b)
-                    w.disable()
+                    e.blink(color.red, duration=.4)
+                    enemies.remove(e)
+                    invoke(Func(e.disable), delay=.4)
                     b.disable()
-    if distance(player, gun) <= 1.2 and player.gun != gun:
+
+    if distance(player, gun) <= 1.3 and player.gun != gun:
         player.grab(gun)
-    if distance(player, gun2) <= 1.2 and player.gun != gun2:
+    if distance(player, gun2) <= 1.3 and player.gun != gun2:
         player.grab(gun2)
 
 
