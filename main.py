@@ -5,15 +5,15 @@ from ursina.prefabs.first_person_controller import FirstPersonController
 from random import*
 
 app = Ursina()
+guns = list()
+bullets = list()
 
 
 class Gun(Entity):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(scale=0.1, shader=lit_with_shadows_shader, collider='box', **kwargs)
         self.shooting = Sequence(Func(self.shoot), Wait(.1), loop=True, paused=True)
-
-    def set_camera(self, c):
-        self.move = c
+        guns.append(self)
 
     def shoot(self):
         shot.play()
@@ -30,13 +30,13 @@ class Player(FirstPersonController):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.gun = None
-        self.body = Entity(collider='box', parent=self, position=self.position + (0, 1.1, 0))
+        self.body = Entity(collider='None', parent=self, position=self.position + (0, 1.1, 0))
 
     def drop(self):
         if self.gun:
             self.gun.shooting.pause()
             self.gun.parent = scene
-            self.gun.position = self.position + self.forward * 3
+            self.gun.position = self.position + self.forward * 2
             self.gun.y = 1
             self.gun.rotation = (0, 0, 0)
             self.gun.collider = 'mesh'
@@ -49,19 +49,13 @@ class Player(FirstPersonController):
         g.parent = camera
         g.collider = None
         self.gun = g
+        self.gun.collider = None
 
 
 ground = Entity(model='plane', scale=(100, 1, 100), texture='grass', texture_scale=(10, 10), collider='box')
 player = Player()
-gun = Gun(model='models/pistol.blend', color=color.black, position=(3, 1, 3), collider='mesh', scale=0.1,
-          shader=lit_with_shadows_shader, auto=False)
-gun2 = Gun(model='models/m4a1.blend', texture='m4a1', position=(-3, 1, -3), collider='mesh', scale=0.1,
-           shader=lit_with_shadows_shader, auto=True)
-gun.set_camera((12, 3, 4))
-gun2.set_camera((5, 3, 3))
-
-guns = [gun, gun2]
-bullets = list()
+gun = Gun(model='models/pistol.obj', texture='textures/pistol.png', position=(3, 1, 3), auto=False, move=(11, 3, 6))
+gun2 = Gun(model='models/m4a1.obj', texture='textures/m4a1.png', position=(-3, 1, -3), auto=True, move=(10, 3, 2))
 
 box1 = Entity(model='cube', collider='box', position=(0, 0, 8), scale=6, rotation=(45, 0, 0), texture='brick',
               texture_scale=(8, 8), shader=lit_with_shadows_shader)
@@ -87,9 +81,9 @@ def update():
                     bullets.remove(b)
                     w.disable()
                     b.disable()
-    if player.body.intersects(gun) and player.gun != gun:
+    if distance(player, gun) <= 1.1 and player.gun != gun:
         player.grab(gun)
-    if player.body.intersects(gun2) and player.gun != gun2:
+    if distance(player, gun2) <= 1.1 and player.gun != gun2:
         player.grab(gun2)
 
 
